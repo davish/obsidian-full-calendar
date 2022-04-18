@@ -1,7 +1,7 @@
 import { Calendar, EventInput } from "@fullcalendar/core";
 import { MetadataCache, Vault, WorkspaceLeaf } from "obsidian";
 import { parseFrontmatter } from "src/frontmatter";
-import { CalendarSource, EventFrontmatter, FCError } from "src/types";
+import { CalendarSource, EventFrontmatter } from "src/types";
 
 export function basenameFromEvent(event: EventFrontmatter): string {
 	switch (event.type) {
@@ -10,6 +10,8 @@ export function basenameFromEvent(event: EventFrontmatter): string {
 			return `${event.date} ${event.title}`;
 		case "recurring":
 			return `(Every ${event.daysOfWeek.join(",")}) ${event.title})`;
+		case "rrule":
+			return `(${event.rrule}) ${event.title})`;
 	}
 }
 

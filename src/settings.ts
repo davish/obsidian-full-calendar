@@ -1,11 +1,23 @@
 import FullCalendarPlugin from "./main";
-import { App, DropdownComponent, Notice, PluginSettingTab, Setting, TFolder, Vault } from "obsidian";
-import { makeDefaultPartialCalendarSource, CalendarSource, FCError } from "./types";
+import {
+	App,
+	DropdownComponent,
+	Notice,
+	PluginSettingTab,
+	Setting,
+	TFolder,
+} from "obsidian";
+import {
+	isCalDAV,
+	makeDefaultPartialCalendarSource,
+	CalendarSource,
+	FCError,
+} from "./types";
 import { CalendarSettings } from "./components/CalendarSetting";
 import { AddCalendarSource } from "./components/AddCalendarSource";
 import { RemoteSource } from "./models/EventSource";
 import * as ReactDOM from "react-dom";
-import { createElement, useState } from "react";
+import { createElement } from "react";
 import { ReactModal } from "./modal";
 
 export interface FullCalendarSettings {
@@ -48,52 +60,65 @@ export function addCalendarButton(
 	return new Setting(containerEl)
 		.setName("Calendars")
 		.setDesc("Add calendar")
-		.addDropdown((d) =>
-			dropdown = d
-			.addOptions({
-				local: "Local",
-				icloud: "iCloud",
-				caldav: "CalDAV",
-				ical: "Remote (.ics format)",
-			})
+		.addDropdown(
+			(d) =>
+				(dropdown = d.addOptions({
+					local: "Local",
+					icloud: "iCloud",
+					caldav: "CalDAV",
+					ical: "Remote (.ics format)",
+				}))
 		)
 		.addExtraButton((button) => {
 			button.setTooltip("Add Calendar");
 			button.setIcon("plus-with-circle");
 			button.onClick(() => {
-				let modal = new ReactModal(
-					app,
-					async () => {
-						await plugin.loadSettings();
-						const usedDirectories = (listUsedDirectories ? listUsedDirectories : () =>
-							plugin.settings.calendarSources
-								.map((s) => s.type === "local" && s.directory)
-								.filter((s): s is string => !!s)
-						)();
+				let modal = new ReactModal(app, async () => {
+					await plugin.loadSettings();
+					const usedDirectories = (
+						listUsedDirectories
+							? listUsedDirectories
+							: () =>
+									plugin.settings.calendarSources
+										.map(
+											(s) =>
+												s.type === "local" &&
+												s.directory
+										)
+										.filter((s): s is string => !!s)
+					)();
 
-						return createElement(AddCalendarSource, {
-							source: makeDefaultPartialCalendarSource(
-								dropdown.getValue() as CalendarSource["type"]
-							),
-							directories: directories.filter(
-								(dir) => usedDirectories.indexOf(dir) === -1
-							),
-							submit: async (source: CalendarSource) => {
-								if (source.type === "caldav" || source.type === "icloud") {
-									let sources = await new RemoteSource(source).importCalendars();
-									if (sources instanceof FCError) {
-										new Notice(sources.message);
-									} else {
-										sources.forEach((source) => submitCallback(source));
-									}
+					return createElement(AddCalendarSource, {
+						source: makeDefaultPartialCalendarSource(
+							dropdown.getValue() as CalendarSource["type"]
+						),
+						directories: directories.filter(
+							(dir) => usedDirectories.indexOf(dir) === -1
+						),
+						submit: async (source: CalendarSource) => {
+							if (
+								source.type === "caldav" ||
+								source.type === "icloud"
+							) {
+								let sources = await new RemoteSource(
+									app.vault,
+									app.metadataCache,
+									source
+								).importCalendars();
+								if (sources instanceof FCError) {
+									new Notice(sources.message);
 								} else {
-									submitCallback(source);
+									sources.forEach((source) =>
+										submitCallback(source)
+									);
 								}
-								modal.close();
+							} else {
+								submitCallback(source);
 							}
-						});
-					}
-				);
+							modal.close();
+						},
+					});
+				});
 				modal.open();
 			});
 		});
@@ -101,6 +126,7 @@ export function addCalendarButton(
 
 export class FullCalendarSettingTab extends PluginSettingTab {
 	plugin: FullCalendarPlugin;
+	sourceList?: CalendarSettings;
 
 	constructor(app: App, plugin: FullCalendarPlugin) {
 		super(app, plugin);
@@ -124,18 +150,18 @@ export class FullCalendarSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-		.setName("Starting Day of the Week")
-		.setDesc("Choose what day of the week to start.")
-		.addDropdown((dropdown) => {
-			WEEKDAYS.forEach((day, code) => {
-				dropdown.addOption(code.toString(), day);
+			.setName("Starting Day of the Week")
+			.setDesc("Choose what day of the week to start.")
+			.addDropdown((dropdown) => {
+				WEEKDAYS.forEach((day, code) => {
+					dropdown.addOption(code.toString(), day);
+				});
+				dropdown.setValue(this.plugin.settings.firstDay.toString());
+				dropdown.onChange(async (codeAsString) => {
+					this.plugin.settings.firstDay = Number(codeAsString);
+					await this.plugin.saveSettings();
+				});
 			});
-			dropdown.setValue(this.plugin.settings.firstDay.toString());
-			dropdown.onChange(async (codeAsString) => {
-				this.plugin.settings.firstDay = Number(codeAsString);
-				await this.plugin.saveSettings();
-			});
-		});
 
 		addCalendarButton(
 			this.app,
@@ -144,9 +170,10 @@ export class FullCalendarSettingTab extends PluginSettingTab {
 			async (source: CalendarSource) => {
 				sourceList.addSource(source);
 			},
-			() => sourceList.state.sources
-				.map((s) => s.type === "local" && s.directory)
-				.filter((s): s is string => !!s)
+			() =>
+				sourceList.state.sources
+					.map((s) => s.type === "local" && s.directory)
+					.filter((s): s is string => !!s)
 		);
 
 		const sourcesDiv = containerEl.createDiv();
@@ -154,12 +181,84 @@ export class FullCalendarSettingTab extends PluginSettingTab {
 		let sourceList = ReactDOM.render(
 			createElement(CalendarSettings, {
 				sources: this.plugin.settings.calendarSources,
-				submit: async (settings: CalendarSource[]) => {
-					this.plugin.settings.calendarSources = settings;
+				submit: async (sources: CalendarSource[]) => {
+					await this.handleRemoval(
+						this.plugin.settings.calendarSources,
+						sources
+					);
+
+					this.plugin.settings.calendarSources = sources;
 					await this.plugin.saveSettings();
+				},
+				sourcesUpdated: async (
+					oldSources: CalendarSource[],
+					sources: CalendarSource[]
+				) => {
+					await this.handleRemoval(oldSources, sources, true);
 				},
 			}),
 			sourcesDiv
 		);
+		this.sourceList = sourceList;
+	}
+
+	async handleRemoval(
+		oldSources: CalendarSource[],
+		sources: CalendarSource[],
+		checkExisting: boolean = false
+	) {
+		// Handle removed sources
+		let removalPromises: Promise<void>[] = [];
+		oldSources.forEach((oldSource) => {
+			if (!isCalDAV(oldSource)) {
+				return;
+			}
+
+			let remove = false;
+			let newlyFound = sources.find(
+				(newSource) =>
+					isCalDAV(newSource) && newSource.url == oldSource.url
+			);
+			if (newlyFound == undefined) {
+				if (checkExisting) {
+					// Only remove if the source is a saved source. That means
+					// we added a source, and subsequently removed it without
+					// ever saving it. This is the only opportunity to clean up
+					// any caches associated with CalDAV calendars that were
+					// imported but never saved.
+					let existing = this.plugin.settings.calendarSources.find(
+						(existingSource) =>
+							isCalDAV(existingSource) &&
+							existingSource.url == oldSource.url
+					);
+					remove = existing == undefined;
+				} else {
+					remove = true;
+				}
+			}
+			if (remove) {
+				removalPromises.push(
+					new RemoteSource(
+						this.app.vault,
+						this.app.metadataCache,
+						oldSource
+					).emptyCache()
+				);
+			}
+		});
+		await Promise.all(removalPromises);
+	}
+
+	async hide() {
+		if (!this.sourceList) {
+			return;
+		}
+
+		if (this.sourceList.state.dirty) {
+			await this.handleRemoval(
+				this.sourceList.state.sources,
+				this.plugin.settings.calendarSources
+			);
+		}
 	}
 }

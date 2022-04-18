@@ -1,6 +1,5 @@
+import { accessSync } from "fs";
 import * as React from "react";
-import { SetStateAction, useState } from "react";
-
 import { CalendarSource } from "../types";
 
 type SourceWith<T extends Partial<CalendarSource>, K> = T extends K ? T : never;
@@ -129,7 +128,11 @@ export const CalendarSettingRow = ({
 
 interface CalendarSettingProps {
 	sources: CalendarSource[];
-	submit: (payload: CalendarSource[]) => void;
+	submit: (payload: CalendarSource[]) => Promise<void>;
+	sourcesUpdated: (
+		oldSources: CalendarSource[],
+		newSources: CalendarSource[]
+	) => Promise<void>;
 }
 type CalendarSettingState = {
 	sources: CalendarSource[];
@@ -144,8 +147,15 @@ export class CalendarSettings extends React.Component<
 		this.state = { sources: props.sources, dirty: false };
 	}
 
+	componentDidUpdate(
+		prevProps: CalendarSettingProps,
+		previousState: CalendarSettingState
+	) {
+		prevProps.sourcesUpdated(previousState.sources, this.state.sources);
+	}
+
 	addSource(source: CalendarSource) {
-		this.setState((state, props) => ({
+		this.setState((state /*props*/) => ({
 			sources: [...state.sources, source],
 			dirty: true,
 		}));
@@ -159,7 +169,7 @@ export class CalendarSettings extends React.Component<
 						key={idx}
 						setting={s}
 						onColorChange={(color) =>
-							this.setState((state, props) => ({
+							this.setState((state /*props*/) => ({
 								sources: [
 									...state.sources.slice(0, idx),
 									{ ...state.sources[idx], color },
@@ -169,7 +179,7 @@ export class CalendarSettings extends React.Component<
 							}))
 						}
 						deleteCalendar={() =>
-							this.setState((state, props) => ({
+							this.setState((state /*props*/) => ({
 								sources: [
 									...state.sources.slice(0, idx),
 									...state.sources.slice(idx + 1),
@@ -182,8 +192,8 @@ export class CalendarSettings extends React.Component<
 				<div className="setting-item-control">
 					{this.state.dirty && (
 						<button
-							onClick={() => {
-								this.props.submit(
+							onClick={async () => {
+								await this.props.submit(
 									this.state.sources.map(
 										(elt) => elt as CalendarSource
 									)

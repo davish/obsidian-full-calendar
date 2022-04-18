@@ -13,6 +13,8 @@ export interface IcalExpanderOptions {
 }
 
 export class IcalExpander {
+	events: ICAL.Event[];
+
 	constructor(opts: IcalExpanderOptions);
 	between(after?: Date, before?: Date): IcalExpanderResults;
 	before(before: Date): IcalExpanderResults;

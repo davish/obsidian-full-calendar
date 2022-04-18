@@ -12,7 +12,7 @@ import {
 
 import { IcsSource, NoteSource, RemoteSource } from "./models/EventSource";
 import { renderOnboarding } from "./onboard";
-import { CalendarEvent, LocalEvent } from "./models/Event";
+import { CalendarEvent, EditableEvent, LocalEvent } from "./models/Event";
 import { NoteEvent } from "./models/NoteEvent";
 import { eventFromCalendarId } from "./models";
 
@@ -74,12 +74,15 @@ export class CalendarView extends ItemView {
 		let calendarEl = container.createEl("div");
 		const noteSourceResults = await Promise.all(noteSourcePromises);
 		const sources = noteSourceResults.flatMap((s) =>
-			s instanceof FCError ? [] : [s]
+			s instanceof FCError ? [] : Array.isArray(s) ? s : [s]
 		);
 		if (
 			sources.length === 0 &&
 			this.plugin.settings.calendarSources.filter(
-				(s) => s.type === "ical" || s.type === "caldav" || s.type === "icloud"
+				(s) =>
+					s.type === "ical" ||
+					s.type === "caldav" ||
+					s.type === "icloud"
 			).length === 0
 		) {
 			renderOnboarding(this.app, this.plugin, calendarEl);
@@ -135,7 +138,10 @@ export class CalendarView extends ItemView {
 						this.app.vault,
 						oldEvent.id
 					);
-					if (!existingEvent) {
+					if (
+						!existingEvent ||
+						!(existingEvent instanceof EditableEvent)
+					) {
 						return false;
 					}
 					const frontmatter = eventApiToFrontmatter(newEvent);
@@ -176,21 +182,38 @@ export class CalendarView extends ItemView {
 					if (result instanceof FCError) {
 						new Notice(result.message);
 					} else {
-						this.calendar?.addEventSource(result);
+						if (Array.isArray(result)) {
+							result.forEach((s) =>
+								this.calendar?.addEventSource(s)
+							);
+						} else {
+							this.calendar?.addEventSource(result);
+						}
 					}
 				})
 			);
 
 		this.plugin.settings.calendarSources
-			.flatMap((s) => (s.type === "caldav" || s.type === "icloud" ? [s] : []))
-			.map((s) => new RemoteSource(s))
+			.flatMap((s) =>
+				s.type === "caldav" || s.type === "icloud" ? [s] : []
+			)
+			.map(
+				(s) =>
+					new RemoteSource(this.app.vault, this.app.metadataCache, s)
+			)
 			.map((s) => s.toApi())
 			.forEach((resultPromise) =>
 				resultPromise.then((result) => {
 					if (result instanceof FCError) {
 						new Notice(result.message);
 					} else {
-						this.calendar?.addEventSource(result);
+						if (Array.isArray(result)) {
+							result.forEach((s) =>
+								this.calendar?.addEventSource(s)
+							);
+						} else {
+							this.calendar?.addEventSource(result);
+						}
 					}
 				})
 			);

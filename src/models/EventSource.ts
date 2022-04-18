@@ -1,5 +1,12 @@
 import { EventInput, EventSourceInput } from "@fullcalendar/core";
-import { MetadataCache, request, TFile, TFolder, Vault } from "obsidian";
+import {
+	normalizePath,
+	MetadataCache,
+	request,
+	TFile,
+	TFolder,
+	Vault,
+} from "obsidian";
 import {
 	FCError,
 	CalDAVSource,
@@ -13,12 +20,13 @@ import {
 	makeICalExpander,
 } from "vendor/fullcalendar-ical/icalendar";
 import { NoteEvent } from "./NoteEvent";
+import { CalDAVEvent, CalDAVCalendarCache } from "./CalDAVEvent";
 import Color from "color";
 import * as dav from "dav";
 import * as transport from "src/transport";
 
 export abstract class EventSource {
-	abstract toApi(): Promise<EventSourceInput | FCError>;
+	abstract toApi(): Promise<EventSourceInput | EventSourceInput[] | FCError>;
 }
 
 export class NoteSource extends EventSource {
@@ -65,7 +73,9 @@ export class NoteSource extends EventSource {
 		return events;
 	}
 
-	async toApi(recursive = false): Promise<EventSourceInput | FCError> {
+	async toApi(
+		recursive = false
+	): Promise<EventSourceInput | EventSourceInput[] | FCError> {
 		const events = await this.getEventInputsFromPath(recursive);
 		if (events instanceof FCError) {
 			return events;
@@ -91,7 +101,7 @@ export class IcsSource extends EventSource {
 		this.info = info;
 	}
 
-	async toApi(): Promise<EventSourceInput | FCError> {
+	async toApi(): Promise<EventSourceInput | EventSourceInput[] | FCError> {
 		let url = this.info.url;
 		if (url.startsWith("webcal")) {
 			url = "https" + url.slice("webcal".length);
@@ -140,25 +150,95 @@ export class IcsSource extends EventSource {
 		};
 	}
 }
+
 export class RemoteSource extends EventSource {
+	vault: Vault;
+	cache: MetadataCache;
 	info: CalDAVSource | ICloudSource;
-	constructor(info: CalDAVSource | ICloudSource) {
+
+	constructor(
+		vault: Vault,
+		cache: MetadataCache,
+		info: CalDAVSource | ICloudSource
+	) {
 		super();
+		this.vault = vault;
+		this.cache = cache;
 		this.info = info;
+	}
+
+	get cacheDirectory(): string {
+		return `${this.info.directory}/.cache`;
+	}
+
+	eventPath(url: string): string {
+		return `${this.cacheDirectory}/${encodeURIComponent(url)}`;
+	}
+
+	calendarPath(url: string): string {
+		return `${this.cacheDirectory}/${encodeURIComponent(url)}.json`;
+	}
+
+	async readCache(): Promise<CalDAVCalendarCache | null> {
+		const calendarPath = this.calendarPath(this.info.url);
+		if (!this.vault.adapter.exists(calendarPath)) {
+			return null;
+		}
+
+		const calendarCache = JSON.parse(
+			await this.vault.adapter.read(calendarPath)
+		) as CalDAVCalendarCache;
+
+		return calendarCache;
+	}
+
+	async emptyCache() {
+		const calendarCache = await this.readCache();
+		if (calendarCache == null) {
+			return;
+		}
+
+		let paths: string[] = [];
+		Object.keys(calendarCache.events).forEach((url) => {
+			paths.push(normalizePath(this.eventPath(url)));
+		});
+
+		await Promise.all(
+			paths.map(async (path) => {
+				if (await this.vault.adapter.exists(path)) {
+					await this.vault.adapter.remove(path);
+				}
+			})
+		);
+		await this.vault.adapter.remove(this.calendarPath(this.info.url));
 	}
 
 	async importCalendars(): Promise<CalDAVSource[] | FCError> {
 		try {
+			const sourceFolder = this.vault.getAbstractFileByPath(
+				this.info.directory
+			);
+			if (!(sourceFolder instanceof TFolder)) {
+				return new FCError("Directory");
+			}
+			const cacheFolder = this.vault.getAbstractFileByPath(
+				this.cacheDirectory
+			);
+			if (!(cacheFolder instanceof TFolder)) {
+				await this.vault.createFolder(this.cacheDirectory);
+			}
+
 			let xhr = new transport.Basic(
 				new dav.Credentials({
 					username: this.info.username,
 					password: this.info.password,
 				})
 			);
+
 			let account = await dav.createAccount({
 				xhr: xhr,
 				server: this.info.url,
-				loadObjects: false,
+				loadObjects: true,
 				loadCollections: true,
 			});
 
@@ -169,27 +249,60 @@ export class RemoteSource extends EventSource {
 				depth: "0",
 			});
 
-			return (
-				await Promise.all(
-					account.calendars.map(async (calendar) => {
-						if (!calendar.components.includes("VEVENT")) {
-							return null;
-						}
-						let colorResponse = await xhr.send(
-							colorRequest,
-							calendar.url
-						);
-						let color = colorResponse[0].props?.calendarColor;
-						return {
-							...this.info,
-							type: "caldav",
-							name: calendar.displayName,
-							homeUrl: calendar.url,
-							color: color ? Color(color).hex() : this.info.color,
-						};
-					})
-				)
-			).filter((source): source is CalDAVSource => source != null);
+			const sources = await Promise.all(
+				account.calendars.map(async (calendar) => {
+					if (!calendar.components.includes("VEVENT")) {
+						return null;
+					}
+					const events = await Promise.all(
+						calendar.objects.map(async (event) => {
+							if (!event.calendarData) {
+								return null;
+							}
+							await this.vault.create(
+								this.eventPath(event.url),
+								event.calendarData
+							);
+							return { url: event.url, etag: event.etag };
+						})
+					);
+
+					await this.vault.create(
+						this.calendarPath(calendar.url),
+						JSON.stringify({
+							ctag: calendar.ctag,
+							events: events.reduce(
+								(events, event) =>
+									event != null
+										? { ...events, [event.url]: event.etag }
+										: events,
+								{}
+							),
+						})
+					);
+
+					let colorResponse = await xhr.send(
+						colorRequest,
+						calendar.url
+					);
+
+					let color = colorResponse[0].props?.calendarColor;
+					let calendarColor = color
+						? Color(color).hex()
+						: this.info.color;
+					return {
+						...this.info,
+						type: "caldav",
+						url: calendar.url,
+						ctag: calendar.ctag,
+						name: calendar.displayName,
+						color: calendarColor,
+					};
+				})
+			);
+			return sources.filter(
+				(source): source is CalDAVSource => source != null
+			);
 		} catch (e) {
 			console.error(`Error importing calendars from ${this.info.url}`);
 			console.error(e);
@@ -199,83 +312,47 @@ export class RemoteSource extends EventSource {
 		}
 	}
 
-	async toApi(): Promise<EventSourceInput | FCError> {
-		let expanders: (IcalExpander | FCError)[] = [];
-		const getExpanders = async (): Promise<(IcalExpander | FCError)[]> => {
-			if (expanders.length) {
-				return expanders;
-			}
-			try {
-				let xhr = new transport.Basic(
-					new dav.Credentials({
-						username: this.info.username,
-						password: this.info.password,
-					})
-				);
-				let account = await dav.createAccount({
-					xhr: xhr,
-					server: this.info.url,
-				});
-				let calendar = account.calendars.find(
-					(calendar) => calendar.url === this.info.homeUrl
-				);
-				if (!calendar) {
-					return [
-						new FCError(
-							`There was an error loading a calendar event. Check the console for full details.`
-						),
-					];
-				}
+	async toApi(): Promise<EventSourceInput | EventSourceInput[] | FCError> {
+		const calendarCache = await this.readCache();
+		if (calendarCache === null) {
+			const calendarPath = this.calendarPath(this.info.url);
+			return [new FCError(`Unable to load ${calendarPath}`)];
+		}
 
-				let events = await dav.listCalendarObjects(calendar, {
-					xhr: xhr,
-				});
+		let eventPromises: Promise<CalDAVEvent | null>[] = [];
+		Object.keys(calendarCache.events).forEach((url) => {
+			eventPromises.push(
+				CalDAVEvent.fromPath(
+					this.cache,
+					this.vault,
+					this.eventPath(url)
+				)
+			);
+		});
 
-				expanders = events
-					.map((vevent) => {
-						try {
-							return vevent?.calendarData
-								? makeICalExpander(vevent.calendarData)
-								: null;
-						} catch (e) {
-							console.error("Unable to parse calendar");
-							console.error(e);
-							new FCError(
-								`There was an error loading a calendar event. Check the console for full details.`
-							);
+		let events = (
+			await Promise.all(
+				eventPromises.map(async (eventPromise) => {
+					try {
+						let event = await eventPromise;
+						if (event != null) {
+							return event.toCalendarEvent();
 						}
-					})
-					.filter((expander): expander is IcalExpander => !!expander);
-				return expanders;
-			} catch (e) {
-				console.error(`Error loading calendar from ${this.info.url}`);
-				console.error(e);
-				return [
-					new FCError(
-						`There was an error loading a calendar. Check the console for full details.`
-					),
-				];
-			}
-		};
-		return {
-			events: async function ({ start, end }) {
-				const icals = await getExpanders();
-				const events = icals
-					.flatMap((ical) => {
-						if (ical instanceof FCError) {
-							console.error("Unable to parse calendar");
-							console.error(ical);
-							return null;
-						} else {
-							return expandICalEvents(ical, {
-								start,
-								end,
-							});
-						}
-					})
-					.filter((e): e is EventSource => !!e);
-				return events;
-			},
+					} catch (e) {
+						console.error(`Error importing event`);
+						console.error(e);
+					}
+				})
+			)
+		).filter((event): event is EventInput => event != undefined);
+
+		// Functions are used for rrule events
+		let eventFunctions = events.filter(
+			(event) => typeof event === "function"
+		);
+		events = events.filter((event) => typeof event !== "function");
+		let baseSource = {
+			events,
 			editable: false,
 			textColor: getComputedStyle(document.body).getPropertyValue(
 				"--text-on-accent"
@@ -286,5 +363,9 @@ export class RemoteSource extends EventSource {
 					"--interactive-accent"
 				),
 		};
+
+		return eventFunctions
+			.map((func) => ({ ...baseSource, events: func }))
+			.concat([baseSource]);
 	}
 }

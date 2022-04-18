@@ -21,14 +21,15 @@ export function renderOnboarding(
 
 	const container = notice.createDiv();
 	container.style.position = "fixed";
-  addCalendarButton(
-	app,
-	plugin,
-	container,
-	async (source: CalendarSource) => {
-		const { calendarSources } = plugin.settings;
-		calendarSources.push(source);
-		await plugin.saveSettings();
-		await plugin.activateView();
-	});
+	addCalendarButton(
+		app,
+		plugin,
+		container,
+		async (source: CalendarSource) => {
+			const { calendarSources } = plugin.settings;
+			calendarSources.push(source);
+			await plugin.saveSettings();
+			await plugin.activateView();
+		}
+	);
 }

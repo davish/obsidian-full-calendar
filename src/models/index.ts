@@ -13,10 +13,11 @@ export async function eventFromCalendarId(
 	const info = rest.join("::");
 	switch (prefix) {
 		case ICSEvent.ID_PREFIX:
-		case CalDAVEvent.ID_PREFIX:
 			throw new FCError(
 				"Cannot create instance of ICS event given its ID."
 			);
+		case CalDAVEvent.ID_PREFIX:
+			return CalDAVEvent.fromPath(cache, vault, info);
 		case NoteEvent.ID_PREFIX:
 			return NoteEvent.fromPath(cache, vault, info);
 	}

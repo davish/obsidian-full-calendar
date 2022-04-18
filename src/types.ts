@@ -1,5 +1,4 @@
-import { MetadataCache, Vault } from "obsidian";
-
+import { RRule, RRuleSet } from "rrule";
 export const PLUGIN_SLUG = "full-calendar-plugin";
 
 // Frontmatter
@@ -30,8 +29,26 @@ export type RecurringEventFrontmatter = {
 	endRecur?: string;
 } & CommonEventFrontmatter;
 
+export type RecurrenceException = {
+	title?: string;
+	date: string;
+	endDate: string;
+	exceptionDate: string;
+};
+
+export type RRuleEventFrontmatter = {
+	type: "rrule";
+	title?: string;
+	date: string;
+	endDate: string;
+	allDay: boolean;
+	rrule: RRule | RRuleSet;
+	recurrenceExceptions?: RecurrenceException[];
+};
+
 export type EventFrontmatter =
 	| SingleEventFrontmatter
+	| RRuleEventFrontmatter
 	| RecurringEventFrontmatter;
 
 /*
@@ -119,7 +136,6 @@ export type ICalSource = {
 	url: string;
 } & CalendarSourceCommon;
 
-
 /**
  * Auth types. Currently only support Basic, but will probably support OAuth in the future.
  */
@@ -135,10 +151,12 @@ type AuthType = BasicAuth;
  */
 export type CalDAVSource = {
 	type: "caldav";
-	name: string;
 	url: string;
-	homeUrl: string;
-} & CalendarSourceCommon & AuthType;
+	ctag: string;
+	name: string;
+	directory: string;
+} & CalendarSourceCommon &
+	AuthType;
 
 /**
  * An read/write mirror of an iCloud backed calendar.
@@ -155,6 +173,12 @@ export type CalendarSource =
 	| CalDAVSource
 	| ICloudSource;
 
+export function isCalDAV(
+	source: CalendarSource
+): source is CalDAVSource | ICloudSource {
+	return source.type === "caldav" || source.type === "icloud";
+}
+
 /**
  * Construct a partial calendar source of the specified type
  */
@@ -167,7 +191,7 @@ export function makeDefaultPartialCalendarSource(
 			color: getComputedStyle(document.body)
 				.getPropertyValue("--interactive-accent")
 				.trim(),
-			url: "https://caldav.icloud.com"
+			url: "https://caldav.icloud.com",
 		} as Partial<ICloudSource>;
 	}
 
@@ -175,7 +199,7 @@ export function makeDefaultPartialCalendarSource(
 		type: type,
 		color: getComputedStyle(document.body)
 			.getPropertyValue("--interactive-accent")
-			.trim()
+			.trim(),
 	};
 }
 

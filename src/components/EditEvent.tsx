@@ -1,4 +1,3 @@
-import { DropdownComponent } from "obsidian";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -117,8 +116,10 @@ export const EditEvent = ({
 	let initialStartTime = "";
 	let initialEndTime = "";
 	if (initialEvent && initialEvent.allDay === false) {
-		initialStartTime = initialEvent.startTime || "";
-		initialEndTime = initialEvent.endTime || "";
+		initialStartTime =
+			("startTime" in initialEvent && initialEvent.startTime) || "";
+		initialEndTime =
+			("endTime" in initialEvent && initialEvent.endTime) || "";
 	}
 
 	const [startTime, setStartTime] = useState(initialStartTime);
