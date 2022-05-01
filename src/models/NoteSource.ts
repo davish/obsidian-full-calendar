@@ -16,10 +16,10 @@ export class NoteSource extends EventSource {
 		this.info = info;
 	}
 
-	private async getEventInputsFromPath(
+	private getEventInputsFromPath(
 		recursive?: boolean,
 		path?: string
-	): Promise<EventInput[] | FCError> {
+	): EventInput[] | FCError {
 		const eventFolder = this.vault.getAbstractFileByPath(
 			path || this.info.directory
 		);
@@ -35,7 +35,7 @@ export class NoteSource extends EventSource {
 					events.push(event.toCalendarEvent());
 				}
 			} else if (recursive) {
-				const childEvents = await this.getEventInputsFromPath(
+				const childEvents = this.getEventInputsFromPath(
 					recursive,
 					file.path
 				);
@@ -49,7 +49,7 @@ export class NoteSource extends EventSource {
 	}
 
 	async toApi(recursive = false): Promise<EventSourceInput | FCError> {
-		const events = await this.getEventInputsFromPath(recursive);
+		const events = this.getEventInputsFromPath(recursive);
 		if (events instanceof FCError) {
 			return events;
 		}

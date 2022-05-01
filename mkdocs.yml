@@ -33,6 +33,10 @@ markdown_extensions:
 nav:
     - Introduction: index.md
     - getting_started.md
+    - Calendar Types:
+          - calendars/local.md
+          - calendars/ics.md
+          - calendars/caldav.md
     - Events:
           - events/types.md
           - events/manage.md
@@ -43,8 +47,5 @@ nav:
           - settings/sources.md
           - settings/subfolders.md
           - settings/weekstart.md
-    - Calendar Sync:
-          - sync/ics.md
-          - sync/caldav.md
     - Advanced:
           - Dataview integration: advanced/dataview.md

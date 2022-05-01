@@ -12,6 +12,7 @@ import {
 import { IcsSource } from "./models/IcsSource";
 import { NoteSource } from "./models/NoteSource";
 import { RemoteSource } from "./models/RemoteSource";
+import { InlineNoteSource } from "./models/InlineNoteSource";
 import { renderOnboarding } from "./onboard";
 import { CalendarEvent, LocalEvent } from "./models/Event";
 import { NoteEvent } from "./models/NoteEvent";
@@ -69,6 +70,17 @@ export class CalendarView extends ItemView {
 				(s) => new NoteSource(this.app.vault, this.app.metadataCache, s)
 			)
 			.map((ns) => ns.toApi(this.plugin.settings.recursiveLocal));
+
+		const is = new InlineNoteSource(
+			this.app.vault,
+			this.app.metadataCache,
+			{
+				type: "inline",
+				color: "blue",
+				directory: "inline",
+			}
+		);
+		// is.printListItems();
 
 		const container = this.containerEl.children[1];
 		container.empty();

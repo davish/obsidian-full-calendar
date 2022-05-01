@@ -104,6 +104,15 @@ export type LocalCalendarSource = {
 } & CalendarSourceCommon;
 
 /**
+ * Local calendar with events stored as lines within notes in a directory.
+ * Frontmatter is derived from dataview inline fields.
+ */
+export type InlineCalendarSource = {
+	type: "inline";
+	directory: string;
+} & CalendarSourceCommon;
+
+/**
  * Public google calendars using the FullCalendar integration.
  */
 export type GoogleCalendarSource = {
