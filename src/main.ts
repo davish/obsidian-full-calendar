@@ -50,7 +50,7 @@ export default class FullCalendarPlugin extends Plugin {
 			id: "full-calendar-new-event",
 			name: "New Event",
 			callback: () => {
-				new EventModal(this.app, this, null).open();
+				new EventModal(this.app, this, null, "Create Event").open();
 			},
 		});
 		this.addCommand({
@@ -68,7 +68,12 @@ export default class FullCalendarPlugin extends Plugin {
 					this.app.workspace.getActiveViewOfType(MarkdownView);
 				if (view) {
 					const file = view.file;
-					new EventModal(this.app, this, null).editInModal(file);
+					new EventModal(
+						this.app,
+						this,
+						null,
+						"Create Event"
+					).editInModal(file);
 				}
 			},
 		});

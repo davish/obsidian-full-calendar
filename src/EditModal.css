@@ -1,0 +1,51 @@
+.ofc-edit-modal-content {
+    display: grid;
+    gap: 1em;
+    grid-template-columns: 1fr 1fr;
+}
+
+.ofc-edit-modal-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.ofc-edit-modal-event-save-button {
+    margin: 0;
+}
+
+.ofc-edit-modal-content label {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.ofc-edit-modal-content input[type="date"],
+.ofc-edit-modal-content input[type="time"],
+.ofc-edit-modal-content select {
+    background: var(--background-modifier-form-field);
+    border: 1px solid var(--background-modifier-border);
+    color: var(--text-normal);
+    font-family: inherit;
+    padding: 5px 14px;
+    font-size: 16px;
+    border-radius: 4px;
+    outline: none;
+    height: 30px;
+}
+
+.ofc-edit-modal-buttons,
+.ofc-edit-modal-checkbox {
+    display: flex;
+}
+
+.ofc-edit-modal-event-delete-button {
+    background-color: var(--background-secondary);
+    color: var(--background-modifier-error);
+    border-color: var(--background-modifier-error);
+    border-width: 1px;
+    border-style: solid;
+    margin-right: auto;
+}
+
+.not-visible {
+    display: none;
+}

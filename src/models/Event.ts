@@ -9,7 +9,7 @@ export function basenameFromEvent(event: EventFrontmatter): string {
 		case undefined:
 			return `${event.date} ${event.title}`;
 		case "recurring":
-			return `(Every ${event.daysOfWeek.join(",")}) ${event.title})`;
+			return `(Every ${event.daysOfWeek.join(",")}) ${event.title}`;
 	}
 }
 

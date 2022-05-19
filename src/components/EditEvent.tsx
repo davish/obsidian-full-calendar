@@ -1,4 +1,3 @@
-import { DropdownComponent } from "obsidian";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -57,26 +56,31 @@ const DAY_MAP = {
 const DaySelect = ({
 	value: days,
 	onChange,
+	label: selectLabel,
 }: {
 	value: string[];
 	onChange: (days: string[]) => void;
+	label: string;
 }) => {
 	return (
-		<div>
-			{Object.entries(DAY_MAP).map(([code, label]) => (
-				<DayChoice
-					key={code}
-					code={code}
-					label={label}
-					isSelected={days.includes(code)}
-					onClick={() =>
-						days.includes(code)
-							? onChange(days.filter((c) => c !== code))
-							: onChange([code, ...days])
-					}
-				/>
-			))}
-		</div>
+		<>
+			<label htmlFor="daysSelect">{selectLabel}</label>
+			<div id="daysSelect">
+				{Object.entries(DAY_MAP).map(([code, label]) => (
+					<DayChoice
+						key={code}
+						code={code}
+						label={label}
+						isSelected={days.includes(code)}
+						onClick={() =>
+							days.includes(code)
+								? onChange(days.filter((c) => c !== code))
+								: onChange([code, ...days])
+						}
+					/>
+				))}
+			</div>
+		</>
 	);
 };
 
@@ -134,6 +138,11 @@ export const EditEvent = ({
 			[]
 	);
 
+	const onRecurringDaysChanged = (days: string[]) => {
+		setIsRecurring(days.length > 0);
+		setDaysOfWeek(days);
+	};
+
 	const [allDay, setAllDay] = useState(initialEvent?.allDay || false);
 
 	const [calendarIndex, setCalendarIndex] = useState(defaultCalendarIndex);
@@ -161,6 +170,7 @@ export const EditEvent = ({
 							endRecur: endRecur || undefined,
 					  }
 					: {
+							type: "single",
 							date,
 							endDate,
 					  }),
@@ -169,18 +179,83 @@ export const EditEvent = ({
 		);
 	};
 
+	const startTimeInput = (
+		<>
+			<label htmlFor="startTime">Start Time</label>
+			<input
+				type="time"
+				id="startTime"
+				value={startTime}
+				required
+				onChange={makeChangeListener(setStartTime, (x) => x)}
+			/>
+		</>
+	);
+
+	const endTimeInput = (
+		<>
+			<label htmlFor="endTime">End Time</label>
+			<input
+				type="time"
+				id="endTime"
+				value={endTime}
+				required
+				onChange={makeChangeListener(setEndTime, (x) => x)}
+			/>
+		</>
+	);
+
+	const startDateInput = (
+		<>
+			<label htmlFor="date">Start Date</label>
+			<input
+				type="date"
+				id="date"
+				value={date}
+				required={!isRecurring}
+				onChange={makeChangeListener(setDate, (x) => x)}
+			/>
+		</>
+	);
+
+	const endDateInput = (
+		<>
+			<label htmlFor="endDate">End Date</label>
+			<input
+				type="date"
+				id="endDate"
+				value={endDate}
+				required={!isRecurring}
+				onChange={makeChangeListener(setEndDate, (x) =>
+					x == "undefined" ? undefined : x
+				)}
+			/>
+		</>
+	);
+
+	const stopRecurringInput = (
+		<>
+			<label htmlFor="startDate">Stop repeating</label>
+			<input
+				type="date"
+				id="endRecurDate"
+				value={endRecur}
+				onChange={makeChangeListener(setEndRecur, (x) => x)}
+			/>
+		</>
+	);
+
 	return (
 		<>
-			<div>
-				<p style={{ float: "right" }}>
-					{open && <button onClick={open}>Open Note</button>}
-				</p>
-			</div>
-
-			<form onSubmit={handleSubmit}>
-				<p>
+			<form onSubmit={handleSubmit} className="ofc-edit-modal-content">
+				<div
+					className="ofc-edit-modal-column"
+					style={{ gridColumn: "span 2" }}
+				>
+					<label htmlFor="title">Event title</label>
 					<input
 						ref={titleRef}
+						className="ofc-edit-modal-event-title"
 						type="text"
 						id="title"
 						value={title}
@@ -188,11 +263,16 @@ export const EditEvent = ({
 						required
 						onChange={makeChangeListener(setTitle, (x) => x)}
 					/>
-				</p>
-				<p>
+				</div>
+				<div
+					className="ofc-edit-modal-column"
+					style={{ gridColumn: "span 2" }}
+				>
+					<label htmlFor="calendar">Calendar</label>
 					<select
 						id="calendar"
 						value={calendarIndex}
+						className={"ofc-edit-modal-event-calendar"}
 						onChange={makeChangeListener(
 							setCalendarIndex,
 							parseInt
@@ -206,121 +286,82 @@ export const EditEvent = ({
 								</option>
 							))}
 					</select>
-				</p>
-				<p>
-					{!isRecurring && (
-						<input
-							type="date"
-							id="date"
-							value={date}
-							required={!isRecurring}
-							onChange={makeChangeListener(setDate, (x) => x)}
-						/>
-					)}
-
-					{allDay ? (
-						<></>
-					) : (
-						<>
-							<input
-								type="time"
-								id="startTime"
-								value={startTime}
-								required
-								onChange={makeChangeListener(
-									setStartTime,
-									(x) => x
-								)}
-							/>
-							-
-							<input
-								type="time"
-								id="endTime"
-								value={endTime}
-								required
-								onChange={makeChangeListener(
-									setEndTime,
-									(x) => x
-								)}
-							/>
-						</>
-					)}
-				</p>
-				<p>
-					<label htmlFor="allDay">All day event </label>
+				</div>
+				<div className="ofc-edit-modal-column">{startDateInput}</div>
+				<div className="ofc-edit-modal-column">
+					{!isRecurring && endDateInput}
+				</div>
+				<div className="ofc-edit-modal-checkbox">
 					<input
 						id="allDay"
 						checked={allDay}
 						onChange={(e) => setAllDay(e.target.checked)}
 						type="checkbox"
 					/>
-				</p>
-				<p>
-					<label htmlFor="recurring">Recurring Event </label>
+					<label htmlFor="allDay">All day event </label>
+				</div>
+				<div className="ofc-edit-modal-checkbox">
 					<input
 						id="recurring"
 						checked={isRecurring}
 						onChange={(e) => setIsRecurring(e.target.checked)}
 						type="checkbox"
 					/>
-				</p>
-
+					<label htmlFor="recurring">Recurring event </label>
+				</div>
+				{!allDay && (
+					<>
+						<div className="ofc-edit-modal-column">
+							{startTimeInput}
+						</div>
+						<div className="ofc-edit-modal-column">
+							{endTimeInput}
+						</div>
+					</>
+				)}
 				{isRecurring && (
 					<>
-						<DaySelect
-							value={daysOfWeek}
-							onChange={setDaysOfWeek}
-						/>
-						<p>
-							Starts recurring
-							<input
-								type="date"
-								id="startDate"
-								value={date}
-								onChange={makeChangeListener(setDate, (x) => x)}
+						<div className="ofc-edit-modal-column">
+							<DaySelect
+								label="Repeat On"
+								value={daysOfWeek}
+								onChange={onRecurringDaysChanged}
 							/>
-							and stops recurring
-							<input
-								type="date"
-								id="endDate"
-								value={endRecur}
-								onChange={makeChangeListener(
-									setEndRecur,
-									(x) => x
-								)}
-							/>
-						</p>
+						</div>
+						<div className="ofc-edit-modal-column">
+							{stopRecurringInput}
+						</div>
 					</>
 				)}
 
-				<p
-					style={{
-						display: "flex",
-						justifyContent: "space-between",
-						width: "100%",
-					}}
+				<div
+					className="ofc-edit-modal-buttons"
+					style={{ gridColumn: "span 2" }}
 				>
-					<button type="submit"> Save Event </button>
-					<span>
-						{deleteEvent && (
-							<button
-								type="button"
-								style={{
-									backgroundColor:
-										"var(--interactive-normal)",
-									color: "var(--background-modifier-error)",
-									borderColor:
-										"var(--background-modifier-error)",
-									borderWidth: "1px",
-									borderStyle: "solid",
-								}}
-								onClick={deleteEvent}
-							>
-								Delete Event
-							</button>
-						)}
-					</span>
-				</p>
+					{deleteEvent && (
+						<button
+							type="button"
+							className="ofc-edit-modal-event-delete-button"
+							onClick={deleteEvent}
+						>
+							Delete Event
+						</button>
+					)}
+					<button
+						className="ofc-edit-modal-event-open-button"
+						onClick={open}
+						disabled={!open}
+					>
+						Open Note
+					</button>
+					<button
+						className="ofc-edit-modal-event-save-button"
+						type="submit"
+					>
+						{" "}
+						Save Event{" "}
+					</button>
+				</div>
 			</form>
 		</>
 	);

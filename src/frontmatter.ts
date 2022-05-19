@@ -22,7 +22,7 @@ export function dateEndpointsToFrontmatter(
 	return {
 		type: "single",
 		date,
-		endDate: date !== endDate ? endDate : undefined,
+		endDate,
 		allDay,
 		...(allDay
 			? {}

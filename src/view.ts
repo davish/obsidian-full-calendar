@@ -1,4 +1,5 @@
 import "./overrides.css";
+import "./EditModal.css";
 import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import { Calendar } from "@fullcalendar/core";
 import { renderCalendar } from "./calendar";
@@ -114,7 +115,8 @@ export class CalendarView extends ItemView {
 					new EventModal(
 						this.app,
 						this.plugin,
-						this.calendar
+						this.calendar,
+						"Edit Event"
 					).editInModal(info.event);
 				}
 			},
@@ -128,6 +130,7 @@ export class CalendarView extends ItemView {
 					this.app,
 					this.plugin,
 					this.calendar,
+					"Create Event",
 					partialEvent
 				);
 				modal.open();
