@@ -12,7 +12,6 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import listPlugin from "@fullcalendar/list";
 import interactionPlugin from "@fullcalendar/interaction";
-import googleCalendarPlugin from "@fullcalendar/google-calendar";
 import iCalendarPlugin from "@fullcalendar/icalendar";
 
 interface ExtraRenderProps {
@@ -46,6 +45,7 @@ export function renderCalendar(
 				revert();
 			}
 		});
+	console.log("EVS2", eventSources);
 	const cal = new Calendar(containerEl, {
 		plugins: [
 			// View plugins
@@ -55,10 +55,8 @@ export function renderCalendar(
 			// Drag + drop and editing
 			interactionPlugin,
 			// Remote sources
-			googleCalendarPlugin,
 			iCalendarPlugin,
 		],
-		googleCalendarApiKey: "AIzaSyDIiklFwJXaLWuT_4y6I9ZRVVsPuf4xGrk",
 		initialView: isMobile ? "timeGrid3Days" : "timeGridWeek",
 		nowIndicator: true,
 		scrollTimeReset: false,

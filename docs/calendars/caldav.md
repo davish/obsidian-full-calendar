@@ -47,6 +47,4 @@ Under `CalDAV URL`, you can copy the URL but make sure you **only** copy up to t
 
 ## Non-working providers
 
-There are a few providers which are not yet supported by the CalDAV sync option:
-
--   Google Calendar requires OAuth instead of HTTP basic authentication.
+There are a few providers which are not yet supported by the CalDAV sync option.

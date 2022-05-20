@@ -65,11 +65,11 @@ export class CalendarView extends ItemView {
 		await this.plugin.loadSettings();
 		const noteSourcePromises = this.plugin.settings.calendarSources
 			.flatMap((s) => (s.type === "local" ? [s] : []))
-			.map(
-				(s) => new NoteSource(this.app.vault, this.app.metadataCache, s)
-			)
-			.map((ns) => ns.toApi(this.plugin.settings.recursiveLocal));
-
+			.map((s) =>
+				new NoteSource(this.app.vault, this.app.metadataCache, s).toApi(
+					this.plugin.settings.recursiveLocal
+				)
+			);
 		const container = this.containerEl.children[1];
 		container.empty();
 		let calendarEl = container.createEl("div");

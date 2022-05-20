@@ -104,14 +104,6 @@ export type LocalCalendarSource = {
 } & CalendarSourceCommon;
 
 /**
- * Public google calendars using the FullCalendar integration.
- */
-export type GoogleCalendarSource = {
-	type: "gcal";
-	url: string;
-} & CalendarSourceCommon;
-
-/**
  * Readonly mirror of a remote calendar located at the given URL.
  */
 export type ICalSource = {
@@ -150,7 +142,6 @@ export type ICloudSource = Omit<CalDAVSource, "type" | "url"> & {
 
 export type CalendarSource =
 	| LocalCalendarSource
-	| GoogleCalendarSource
 	| ICalSource
 	| CalDAVSource
 	| ICloudSource;
