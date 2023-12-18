@@ -22,41 +22,47 @@ import CalDAVCalendar from "./calendars/CalDAVCalendar";
 
 export default class FullCalendarPlugin extends Plugin {
     settings: FullCalendarSettings = DEFAULT_SETTINGS;
-    cache: EventCache = new EventCache({
-        local: (info) =>
-            info.type === "local"
-                ? new FullNoteCalendar(
-                      new ObsidianIO(this.app),
-                      info.color,
-                      info.directory
-                  )
-                : null,
-        dailynote: (info) =>
-            info.type === "dailynote"
-                ? new DailyNoteCalendar(
-                      new ObsidianIO(this.app),
-                      info.color,
-                      info.heading
-                  )
-                : null,
-        ical: (info) =>
-            info.type === "ical" ? new ICSCalendar(info.color, info.url) : null,
-        caldav: (info) =>
-            info.type === "caldav"
-                ? new CalDAVCalendar(
-                      info.color,
-                      info.name,
-                      {
-                          type: "basic",
-                          username: info.username,
-                          password: info.password,
-                      },
-                      info.url,
-                      info.homeUrl
-                  )
-                : null,
-        FOR_TEST_ONLY: () => null,
-    });
+    cache: EventCache = (() => {
+        console.debug("Event Cache Creation");
+
+        return new EventCache({
+            local: (info) =>
+                info.type === "local"
+                    ? new FullNoteCalendar(
+                          new ObsidianIO(this.app),
+                          info.color,
+                          info.directory
+                      )
+                    : null,
+            dailynote: (info) =>
+                info.type === "dailynote"
+                    ? new DailyNoteCalendar(
+                          new ObsidianIO(this.app),
+                          info.color,
+                          info.heading
+                      )
+                    : null,
+            ical: (info) =>
+                info.type === "ical"
+                    ? new ICSCalendar(info.color, info.url)
+                    : null,
+            caldav: (info) =>
+                info.type === "caldav"
+                    ? new CalDAVCalendar(
+                          info.color,
+                          info.name,
+                          {
+                              type: "basic",
+                              username: info.username,
+                              password: info.password,
+                          },
+                          info.url,
+                          info.homeUrl
+                      )
+                    : null,
+            FOR_TEST_ONLY: () => null,
+        });
+    })();
 
     renderCalendar = renderCalendar;
     processFrontmatter = toEventInput;
@@ -78,6 +84,7 @@ export default class FullCalendarPlugin extends Plugin {
         }
     }
     async onload() {
+        console.debug("On Load called...");
         await this.loadSettings();
 
         this.cache.reset(this.settings.calendarSources);

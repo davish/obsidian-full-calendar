@@ -80,7 +80,17 @@ function stringifyYamlLine(
     k: string | number | symbol,
     v: PrintableAtom
 ): string {
-    return `${String(k)}: ${stringifyYamlAtom(v)}`;
+    let stringifiedAtom: string;
+    if (k === "rrule" && typeof v === "string") {
+        stringifiedAtom = "|-";
+
+        const indentation = "\n  ";
+        const replacedValue = v.replace("\n", indentation);
+        stringifiedAtom += `${indentation}${replacedValue}`;
+    } else {
+        stringifiedAtom = stringifyYamlAtom(v);
+    }
+    return `${String(k)}: ${stringifiedAtom}`;
 }
 
 function newFrontmatter(fields: Partial<OFCEvent>): string {
@@ -109,7 +119,18 @@ function modifyFrontmatterString(
         const linesAdded: Set<string | number | symbol> = new Set();
         // Modify rows in-place.
         for (let i = 0; i < frontmatter.length; i++) {
-            const line: string = frontmatter[i];
+            let line: string = frontmatter[i];
+            if (line.endsWith("|-")) {
+                let j = i + 1;
+                while (
+                    j < frontmatter.length &&
+                    frontmatter[j].startsWith("  ")
+                ) {
+                    line += `\n${frontmatter[j]}`;
+                    i++;
+                    j++;
+                }
+            }
             const obj: Record<any, any> | null = parseYaml(line);
             if (!obj) {
                 continue;

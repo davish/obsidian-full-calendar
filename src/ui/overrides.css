@@ -80,3 +80,11 @@
 	border-color: black !important;
 	border-width: 1px !important;
 }
+
+.fc-edit-control {
+	margin: 0 8px;
+}
+
+.fc-recurring-control {
+	margin-left: 12px;
+}

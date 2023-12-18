@@ -324,4 +324,116 @@ describe("Note Calendar Tests", () => {
     // 		.calls[0];
     // 	expect(file.path).toBe(join("events", filename));
     // });
+
+    it("creates an rrule event", async () => {
+        const obsidian = makeApp(MockAppBuilder.make().done());
+        const calendar = new FullNoteCalendar(obsidian, color, dirName);
+        const event = {
+            type: "rrule",
+            title: "Test Event",
+            startDate: "2023-09-12",
+            rrule: "DTSTART:20230912T110000Z\nRRULE:FREQ=WEEKLY;COUNT=30;INTERVAL=1;BYDAY=TU",
+            skipDates: ["2023-09-19"],
+            allDay: false,
+            startTime: "11:00",
+            endTime: "12:30",
+        };
+
+        (obsidian.create as jest.Mock).mockReturnValue({
+            path: join(dirName, "2022-01-01 Test Event.md"),
+        });
+        const { lineNumber } = await calendar.createEvent(parseEvent(event));
+        expect(lineNumber).toBeUndefined();
+        expect(obsidian.create).toHaveBeenCalledTimes(1);
+        const returns = (obsidian.create as jest.Mock).mock.calls[0];
+        console.warn(returns);
+        expect(returns).toMatchInlineSnapshot(`
+            [
+              "events/(every week on Tuesday for 30 times) Test Event.md",
+              "---
+            title: Test Event
+            allDay: false
+            startTime: 11:00
+            endTime: 12:30
+            type: rrule
+            startDate: 2023-09-12
+            rrule: |-
+              DTSTART:20230912T110000Z
+              RRULE:FREQ=WEEKLY;COUNT=30;INTERVAL=1;BYDAY=TU
+            skipDates: [2023-09-19]
+            ---
+            ",
+            ]
+        `);
+    });
+    it("modifies an rrule event", async () => {
+        const rawEvent = {
+            type: "rrule",
+            title: "Test Event",
+            startDate: "2023-09-12",
+            rrule: "DTSTART:20230912T110000Z\nRRULE:FREQ=WEEKLY;COUNT=30;INTERVAL=1;BYDAY=TU",
+            skipDates: ["2023-09-19"],
+            allDay: false,
+            startTime: "11:00",
+            endTime: "12:30",
+        };
+        const event = parseEvent(rawEvent);
+        const filename = "(every week on Tuesday for 30 times) Test Event.md";
+        const obsidian = makeApp(
+            MockAppBuilder.make()
+                .folder(
+                    new MockAppBuilder("events").file(
+                        filename,
+                        new FileBuilder().frontmatter(event)
+                    )
+                )
+                .done()
+        );
+        const calendar = new FullNoteCalendar(obsidian, color, dirName);
+
+        const firstFile = obsidian.getAbstractFileByPath(
+            join("events", filename)
+        ) as TFile;
+
+        const contents = await obsidian.read(firstFile);
+
+        const mockFn = jest.fn();
+        await calendar.modifyEvent(
+            { path: join("events", filename), lineNumber: undefined },
+            // @ts-ignore
+            parseEvent({
+                ...rawEvent,
+                rrule: "DTSTART:20230912T110000Z\nRRULE:FREQ=MONTHLY;COUNT=5;INTERVAL=2;BYDAY=TU;BYSETPOS=1",
+            }),
+            mockFn
+        );
+        const newFilename =
+            "events/(every 2 months on Tuesday for 5 times) Test Event.md";
+        // TODO: make the third param a mock that we can inspect
+        const newLoc = mockFn.mock.calls[0][0];
+        expect(newLoc.file.path).toBe(newFilename);
+        expect(newLoc.lineNumber).toBeUndefined();
+
+        expect(obsidian.rewrite).toHaveReturnedTimes(1);
+        const [file, rewriteCallback] = (obsidian.rewrite as jest.Mock).mock
+            .calls[0];
+        expect(file.path).toBe(join("events", filename));
+
+        expect(rewriteCallback(contents)).toMatchInlineSnapshot(`
+            "---
+            title: Test Event
+            allDay: false
+            startTime: 11:00
+            endTime: 12:30
+            type: rrule
+            startDate: 2023-09-12
+            rrule: |-
+              DTSTART:20230912T110000Z
+              RRULE:FREQ=MONTHLY;COUNT=5;INTERVAL=2;BYDAY=TU;BYSETPOS=1
+            RRULE:FREQ=WEEKLY;COUNT=30;INTERVAL=1;BYDAY=TU
+            skipDates: [2023-09-19]
+            ---
+            "
+        `);
+    });
 });
