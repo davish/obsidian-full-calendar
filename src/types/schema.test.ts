@@ -25,6 +25,8 @@ describe("schema parsing tests", () => {
                   "allDay": true,
                   "date": "2021-01-01",
                   "endDate": null,
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }
@@ -43,6 +45,8 @@ describe("schema parsing tests", () => {
                   "allDay": true,
                   "date": "2021-01-01",
                   "endDate": null,
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }
@@ -61,6 +65,8 @@ describe("schema parsing tests", () => {
                   "allDay": true,
                   "date": "2021-01-01",
                   "endDate": null,
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }
@@ -146,6 +152,8 @@ describe("schema parsing tests", () => {
                   "allDay": true,
                   "date": "2021-01-01",
                   "endDate": "2021-01-03",
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }
@@ -166,6 +174,8 @@ describe("schema parsing tests", () => {
                   "completed": null,
                   "date": "2021-01-01",
                   "endDate": null,
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }
@@ -186,6 +196,8 @@ describe("schema parsing tests", () => {
                   "completed": false,
                   "date": "2021-01-01",
                   "endDate": null,
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }
@@ -206,6 +218,8 @@ describe("schema parsing tests", () => {
                   "completed": "2021-01-01T10:30:00.000Z",
                   "date": "2021-01-01",
                   "endDate": null,
+                  "endTime": null,
+                  "startTime": null,
                   "title": "Test",
                   "type": "single",
                 }

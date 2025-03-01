@@ -26,7 +26,7 @@ export const ParsedDate = z.string();
 //     return stripTime(parsed);
 // });
 
-export const ParsedTime = z.string();
+export const ParsedTime = z.string().nullable().optional();
 // z.string().transform((val, ctx) => {
 //     let parsed = DateTime.fromFormat(val, "h:mm a");
 //     if (parsed.invalidReason) {
@@ -71,6 +71,8 @@ export const EventSchema = z.discriminatedUnion("type", [
         completed: ParsedDate.or(z.literal(false))
             .or(z.literal(null))
             .optional(),
+        startTime: ParsedTime,
+        endTime: ParsedTime,
     }),
     z.object({
         type: z.literal("recurring"),
@@ -96,7 +98,13 @@ export function parseEvent(obj: unknown): OFCEvent {
     if (typeof obj !== "object") {
         throw new Error("value for parsing was not an object.");
     }
-    const objectWithDefaults = { type: "single", allDay: false, ...obj };
+    const objectWithDefaults = {
+        type: "single",
+        allDay: false,
+        startTime: null,
+        endTime: null,
+        ...obj,
+    };
     return {
         ...CommonSchema.parse(objectWithDefaults),
         ...TimeSchema.parse(objectWithDefaults),

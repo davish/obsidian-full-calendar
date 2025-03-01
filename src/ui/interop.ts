@@ -135,7 +135,7 @@ export function toEventInput(
             } else {
                 const dtstartStr = combineDateTimeStrings(
                     frontmatter.startDate,
-                    frontmatter.startTime
+                    frontmatter.startTime || ""
                 );
 
                 if (!dtstartStr) {
@@ -171,7 +171,7 @@ export function toEventInput(
         };
 
         if (!frontmatter.allDay) {
-            const startTime = parseTime(frontmatter.startTime);
+            const startTime = parseTime(frontmatter.startTime || "");
             if (startTime && frontmatter.endTime) {
                 const endTime = parseTime(frontmatter.endTime);
                 const duration = endTime?.minus(startTime);
@@ -188,7 +188,7 @@ export function toEventInput(
         if (!frontmatter.allDay) {
             const start = combineDateTimeStrings(
                 frontmatter.date,
-                frontmatter.startTime
+                frontmatter.startTime || ""
             );
             if (!start) {
                 return null;

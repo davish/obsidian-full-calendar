@@ -167,7 +167,11 @@ export const EditEvent = ({
                 ...{ title },
                 ...(allDay
                     ? { allDay: true }
-                    : { allDay: false, startTime: startTime || "", endTime }),
+                    : {
+                          allDay: false,
+                          startTime: startTime || "",
+                          endTime: endTime || "",
+                      }),
                 ...(isRecurring
                     ? {
                           type: "recurring",

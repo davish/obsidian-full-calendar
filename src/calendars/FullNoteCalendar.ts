@@ -9,6 +9,13 @@ const basenameFromEvent = (event: OFCEvent): string => {
     switch (event.type) {
         case undefined:
         case "single":
+            const startTime = event.startTime?.replace(":", "-") ?? "";
+            const endTime = event.endTime?.replace(":", "-") ?? "";
+
+            if (startTime && endTime) {
+                return `${event.date} ${startTime} ${endTime} ${event.title}`;
+            }
+
             return `${event.date} ${event.title}`;
         case "recurring":
             return `(Every ${event.daysOfWeek.join(",")}) ${event.title}`;

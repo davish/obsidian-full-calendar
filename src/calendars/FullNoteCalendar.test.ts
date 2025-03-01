@@ -58,6 +58,8 @@ describe("Note Calendar Tests", () => {
                         title: "Test Event",
                         allDay: true,
                         date: "2022-01-01",
+                        endTime: null,
+                        startTime: null,
                     } as OFCEvent,
                 },
             ],
@@ -71,6 +73,8 @@ describe("Note Calendar Tests", () => {
                         title: "Test Event",
                         allDay: true,
                         date: "2022-01-01",
+                        endTime: null,
+                        startTime: null,
                     } as OFCEvent,
                 },
                 {
@@ -79,6 +83,8 @@ describe("Note Calendar Tests", () => {
                         title: "Another Test Event",
                         allDay: true,
                         date: "2022-01-02",
+                        endTime: null,
+                        startTime: null,
                     } as OFCEvent,
                 },
             ],
@@ -92,6 +98,8 @@ describe("Note Calendar Tests", () => {
                         title: "Test Event",
                         allDay: true,
                         date: "2022-01-01",
+                        endTime: null,
+                        startTime: null,
                     } as OFCEvent,
                 },
                 {
@@ -181,7 +189,7 @@ describe("Note Calendar Tests", () => {
         const returns = (obsidian.create as jest.Mock).mock.calls[0];
         expect(returns).toMatchInlineSnapshot(`
             [
-              "events/2022-01-01 Test Event.md",
+              "events/2022-01-01 11-00 12-30 Test Event.md",
               "---
             title: Test Event
             allDay: false
@@ -220,7 +228,7 @@ describe("Note Calendar Tests", () => {
         );
     });
 
-    it("modify an existing event and keeping the same day and title", async () => {
+    it("modify an existing event and keeping the same day", async () => {
         const event = parseEvent({
             title: "Test Event",
             allDay: false,
@@ -229,7 +237,7 @@ describe("Note Calendar Tests", () => {
             startTime: "11:00",
             endTime: "12:30",
         });
-        const filename = "2022-01-01 Test Event.md";
+        const filename = "2022-01-01 11-00 12-30 Test Event.md";
         const obsidian = makeApp(
             MockAppBuilder.make()
                 .folder(
@@ -257,7 +265,9 @@ describe("Note Calendar Tests", () => {
         );
         // TODO: make the third param a mock that we can inspect
         const newLoc = mockFn.mock.calls[0][0];
-        expect(newLoc.file.path).toBe(join("events", filename));
+        expect(newLoc.file.path).toBe(
+            join("events", "2022-01-01 11-00 13-30 Test Event.md")
+        );
         expect(newLoc.lineNumber).toBeUndefined();
 
         expect(obsidian.rewrite).toHaveReturnedTimes(1);
