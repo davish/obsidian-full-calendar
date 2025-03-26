@@ -4,20 +4,16 @@ import { DateTime } from "luxon";
 import { rrulestr } from "rrule";
 
 function getDate(t: ical.Time): string {
-    return DateTime.fromSeconds(t.toUnixTime(), { zone: "UTC" }).toISODate();
+    return DateTime.fromJSDate(t.toJSDate()).toISODate();
 }
 
 function getTime(t: ical.Time): string {
     if (t.isDate) {
         return "00:00";
     }
-    return DateTime.fromSeconds(t.toUnixTime(), { zone: "UTC" }).toISOTime({
-        includeOffset: false,
-        includePrefix: false,
-        suppressMilliseconds: true,
-        suppressSeconds: true,
-    });
+    return DateTime.fromJSDate(t.toJSDate()).toFormat("HH:mm");
 }
+
 
 function extractEventUrl(iCalEvent: ical.Event): string {
     let urlProp = iCalEvent.component.getFirstProperty("url");
