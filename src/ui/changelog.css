@@ -1,0 +1,161 @@
+/* src/ui/changelog.css */
+
+.full-calendar-changelog-wrapper {
+    padding: var(--size-4-4);
+    height: 100%;
+    overflow-y: auto;
+}
+
+.full-calendar-changelog-header {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-4);
+    margin-bottom: var(--size-4-6);
+}
+
+.full-calendar-changelog-header button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: var(--font-ui-large);
+    color: var(--text-muted);
+}
+.full-calendar-changelog-header h2 {
+    margin: 0;
+}
+
+/* NEW CSS for Div-based collapsible sections */
+.full-calendar-version-header {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+}
+
+.full-calendar-version-header:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.full-calendar-version-header::before {
+    content: '►'; /* Collapsed state */
+    display: inline-block;
+    margin-right: var(--size-4-2);
+    transition: transform 0.2s ease-in-out;
+}
+
+.full-calendar-version-header.is-open::before {
+    transform: rotate(90deg); /* Expanded state */
+}
+
+.full-calendar-version-header h3 {
+    display: inline-block;
+    margin: 0;
+}
+
+.full-calendar-version-content {
+    padding-left: var(--size-4-4);
+    margin-top: var(--size-4-2);
+}
+
+.full-calendar-version-content.is-collapsed {
+    display: none;
+}
+
+.full-calendar-version-container summary:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.full-calendar-version-container[open] summary {
+    margin-bottom: var(--size-4-2);
+}
+
+.full-calendar-version-container summary h3 {
+    display: inline-block;
+    margin: 0;
+}
+
+.full-calendar-change-item {
+    display: flex;
+    gap: var(--size-4-3);
+    padding: var(--size-4-4);
+    border-radius: var(--radius-m);
+    margin-bottom: var(--size-4-2);
+    background-color: var(--background-secondary);
+    border-left: 3px solid;
+}
+
+.change-type-new { border-color: var(--color-green); }
+.change-type-improvement { border-color: var(--color-blue); }
+.change-type-fix { border-color: var(--color-orange); }
+
+.change-icon {
+    font-size: var(--font-ui-large);
+}
+
+.change-title {
+    font-weight: bold;
+    margin-bottom: var(--size-4-1);
+}
+
+.change-description {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+}
+
+.full-calendar-whats-new-container {
+    margin-bottom: var(--size-8-4); /* Add some space after the section */
+}
+
+.full-calendar-whats-new-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.full-calendar-whats-new-header h2 {
+    margin-bottom: 0;
+}
+
+.full-calendar-whats-new-version {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    margin-top: 0;
+    margin-bottom: var(--size-4-4);
+}
+
+.full-calendar-whats-new-list .setting-item {
+    border: none;
+    padding-left: var(--size-4-8); /* Indent the changes */
+}
+
+.full-calendar-whats-new-list .setting-item-info {
+    width: 100%;
+}
+
+.full-calendar-whats-new-list .setting-item-name {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+}
+
+.full-calendar-whats-new-list .setting-item-description {
+    padding-left: calc(var(--icon-size) + var(--size-4-2)); /* Align description with title */
+}
+
+.full-calendar-whats-new-list .change-icon-settings {
+    font-size: var(--font-ui-medium);
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.full-calendar-whats-new-list .change-icon-settings.change-type-new { color: var(--color-green); }
+.full-calendar-whats-new-list .change-icon-settings.change-type-improvement { color: var(--color-blue); }
+.full-calendar-whats-new-list .change-icon-settings.change-type-fix { color: var(--color-orange); }
+
+.settings-view-new-divider {
+    margin-block-start: var(--size-4-2);  /* Reduce space above */
+    margin-block-end: var(--size-4-4);    /* Reduce space below */
+    border-color: var(--background-modifier-border);
+}
