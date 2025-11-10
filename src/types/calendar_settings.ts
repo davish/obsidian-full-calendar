@@ -13,6 +13,16 @@ const calendarOptionsSchema = z.discriminatedUnion("type", [
         username: z.string(),
         password: z.string(),
     }),
+    z.object({
+        type: z.literal("google"),
+        directory: z.string(),
+        calendarId: z.string(),
+        accessToken: z.string().optional(),
+        refreshToken: z.string().optional(),
+        tokenExpiry: z.number().optional(),
+        syncEnabled: z.boolean().default(false),
+        syncIntervalMinutes: z.number().default(5),
+    }),
 ]);
 
 const colorValidator = z.object({ color: z.string() });
@@ -54,7 +64,7 @@ export function safeParseCalendarInfo(obj: unknown): CalendarInfo | null {
  * Construct a partial calendar source of the specified type
  */
 export function makeDefaultPartialCalendarSource(
-    type: CalendarInfo["type"] | "icloud"
+    type: CalendarInfo["type"] | "icloud" | "google"
 ): Partial<CalendarInfo> {
     if (type === "icloud") {
         return {
@@ -63,6 +73,19 @@ export function makeDefaultPartialCalendarSource(
                 .getPropertyValue("--interactive-accent")
                 .trim(),
             url: "https://caldav.icloud.com",
+        };
+    }
+
+    if (type === "google") {
+        return {
+            type: "google",
+            color: getComputedStyle(document.body)
+                .getPropertyValue("--interactive-accent")
+                .trim(),
+            directory: "CalendarData",
+            calendarId: "primary",
+            syncEnabled: false,
+            syncIntervalMinutes: 5,
         };
     }
 

@@ -441,8 +441,69 @@ export default class EventCache {
      * Delete all events located at a given path and notify subscribers.
      * @param path path of file that has been deleted
      */
-    deleteEventsAtPath(path: string) {
-        this.updateViews([...this.store.deleteEventsAtPath(path)], []);
+    async deleteEventsAtPath(path: string): Promise<void> {
+        // Get event IDs before deletion so we can call calendar.deleteEvent
+        // We need to get them before deleteEventsAtPath removes them
+        const pathIndex = (this.store as any).pathIndex;
+        const eventIds = pathIndex?.getBy?.({ path }) || new Set<string>();
+
+        // For each event, call the calendar's deleteEvent method before removing from store
+        // This ensures Google Calendar sync happens
+        for (const eventId of eventIds) {
+            try {
+                const storedEvent = this.store.getEventDetails(eventId);
+                if (storedEvent) {
+                    const calendar = this.calendars.get(storedEvent.calendarId);
+                    if (
+                        calendar instanceof EditableCalendar &&
+                        storedEvent.location
+                    ) {
+                        // If Google calendar, try richer key-based deletion for reliability
+                        // otherwise fall back to standard deletion
+                        try {
+                            const maybeGoogle = calendar as any;
+                            const filename = storedEvent.location.path.replace(
+                                /^.*\//,
+                                ""
+                            );
+                            if (
+                                typeof maybeGoogle.deleteByKeys === "function"
+                            ) {
+                                // For Google Calendar, try multiple key formats
+                                const eventId = (storedEvent.event as any)?.id;
+                                const keys = [
+                                    eventId, // Event ID from frontmatter
+                                    storedEvent.location.path, // Full path
+                                    filename, // Just filename
+                                ].filter((k): k is string => !!k);
+
+                                await maybeGoogle.deleteByKeys(keys);
+                            } else {
+                                await calendar.deleteEvent(
+                                    storedEvent.location
+                                );
+                            }
+                        } catch (err) {
+                            console.warn(
+                                "Calendar-specific delete failed, falling back to default:",
+                                err
+                            );
+                            await calendar.deleteEvent(storedEvent.location);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(
+                    `Error deleting event ${eventId} from calendar:`,
+                    error
+                );
+                // Continue with other events even if one fails
+            }
+        }
+
+        // Now remove from store and update views
+        const deletedIds = this.store.deleteEventsAtPath(path);
+        this.updateViews([...deletedIds], []);
     }
 
     /**

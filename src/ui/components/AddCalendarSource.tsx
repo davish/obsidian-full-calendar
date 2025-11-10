@@ -216,6 +216,102 @@ function PasswordInput<T extends Partial<CalendarInfo>>({
     );
 }
 
+function CalendarIdInput<T extends Partial<CalendarInfo>>({
+    source,
+    changeListener,
+}: BasicProps<T>) {
+    let sourceWithCalendarId = source as SourceWith<
+        T,
+        { calendarId: undefined }
+    >;
+    return (
+        <div className="setting-item">
+            <div className="setting-item-info">
+                <div className="setting-item-name">Calendar ID</div>
+                <div className="setting-item-description">
+                    Google Calendar ID (use "primary" for your main calendar)
+                </div>
+            </div>
+            <div className="setting-item-control">
+                <input
+                    required
+                    type="text"
+                    value={sourceWithCalendarId.calendarId || ""}
+                    onChange={changeListener((x) => ({
+                        ...sourceWithCalendarId,
+                        calendarId: x,
+                    }))}
+                />
+            </div>
+        </div>
+    );
+}
+
+function SyncEnabledToggle<T extends Partial<CalendarInfo>>({
+    source,
+    changeListener,
+}: BasicProps<T>) {
+    let sourceWithSync = source as SourceWith<T, { syncEnabled: undefined }>;
+    return (
+        <div className="setting-item">
+            <div className="setting-item-info">
+                <div className="setting-item-name">Enable Sync</div>
+                <div className="setting-item-description">
+                    Automatically sync events to Google Calendar
+                </div>
+            </div>
+            <div className="setting-item-control">
+                <input
+                    type="checkbox"
+                    checked={sourceWithSync.syncEnabled || false}
+                    onChange={(e) => {
+                        const newValue = e.target.checked;
+                        changeListener(() => ({
+                            ...sourceWithSync,
+                            syncEnabled: newValue,
+                        }))(e as any);
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function SyncIntervalInput<T extends Partial<CalendarInfo>>({
+    source,
+    changeListener,
+}: BasicProps<T>) {
+    let sourceWithInterval = source as SourceWith<
+        T,
+        { syncIntervalMinutes: undefined }
+    >;
+    return (
+        <div className="setting-item">
+            <div className="setting-item-info">
+                <div className="setting-item-name">Sync Interval (minutes)</div>
+                <div className="setting-item-description">
+                    How often to sync events to Google Calendar
+                </div>
+            </div>
+            <div className="setting-item-control">
+                <input
+                    required
+                    type="number"
+                    min="1"
+                    value={sourceWithInterval.syncIntervalMinutes || 5}
+                    onChange={(e) => {
+                        const numValue = parseInt(e.target.value) || 5;
+                        changeListener(() => ({
+                            ...sourceWithInterval,
+                            syncIntervalMinutes: numValue,
+                        }))(e as any);
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
 interface AddCalendarProps {
     source: Partial<CalendarInfo>;
     directories: string[];
@@ -272,6 +368,33 @@ export const AddCalendarSource = ({
                         directories={directories}
                     />
                 )}
+                {source.type === "google" && (
+                    <DirectorySelect
+                        source={setting}
+                        changeListener={makeChangeListener}
+                        directories={directories}
+                    />
+                )}
+                {source.type === "google" && (
+                    <CalendarIdInput
+                        source={setting}
+                        changeListener={makeChangeListener}
+                    />
+                )}
+                {source.type === "google" && (
+                    <SyncEnabledToggle
+                        source={setting}
+                        changeListener={makeChangeListener}
+                    />
+                )}
+                {source.type === "google" &&
+                    (setting as Extract<CalendarInfo, { type: "google" }>)
+                        .syncEnabled && (
+                        <SyncIntervalInput
+                            source={setting}
+                            changeListener={makeChangeListener}
+                        />
+                    )}
                 {source.type === "dailynote" && (
                     <HeadingInput
                         source={setting}

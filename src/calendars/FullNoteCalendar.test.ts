@@ -42,6 +42,7 @@ const makeApp = (app: MockApp): ObsidianInterface => ({
     rename: jest.fn(),
     delete: jest.fn(),
     process: jest.fn(),
+    createFolder: (path) => app.vault.createFolder(path),
 });
 
 const dirName = "events";

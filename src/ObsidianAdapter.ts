@@ -99,6 +99,12 @@ export interface ObsidianInterface {
      * @param system set to true to send to system trash, otherwise Vault trash.
      */
     delete(file: TFile): Promise<void>;
+
+    /**
+     * Create a folder at the given path if it doesn't exist.
+     * @param path path to create the folder at.
+     */
+    createFolder(path: string): Promise<void>;
 }
 
 /**
@@ -206,5 +212,9 @@ export class ObsidianIO implements ObsidianInterface {
 
     async process<T>(file: TFile, func: (text: string) => T): Promise<T> {
         return func(await this.read(file));
+    }
+
+    async createFolder(path: string): Promise<void> {
+        return this.vault.createFolder(path);
     }
 }
