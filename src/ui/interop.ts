@@ -59,6 +59,11 @@ const getTime = (date: Date): string =>
 
 const getDate = (date: Date): string => DateTime.fromJSDate(date).toISODate();
 
+const getInclusiveAllDayEndDate = (end: Date): string =>
+    DateTime.fromJSDate(end).minus({ days: 1 }).toISODate() || "";
+const getExclusiveAllDayEndDate = (endDate: string): string =>
+    DateTime.fromISO(endDate).plus({ days: 1 }).toISODate();
+
 const combineDateTimeStrings = (date: string, time: string): string | null => {
     const parsedDate = DateTime.fromISO(date);
     if (parsedDate.invalidReason) {
@@ -87,7 +92,8 @@ export function dateEndpointsToFrontmatter(
     allDay: boolean
 ): Partial<OFCEvent> {
     const date = getDate(start);
-    const endDate = getDate(end);
+    const endDate = allDay ? getInclusiveAllDayEndDate(end) : getDate(end);
+
     return {
         type: "single",
         date,
@@ -219,7 +225,9 @@ export function toEventInput(
             event = {
                 ...event,
                 start: frontmatter.date,
-                end: frontmatter.endDate || undefined,
+                end: frontmatter.endDate
+                    ? getExclusiveAllDayEndDate(frontmatter.endDate)
+                    : undefined,
                 extendedProps: {
                     isTask:
                         frontmatter.completed !== undefined &&
@@ -236,7 +244,12 @@ export function toEventInput(
 export function fromEventApi(event: EventApi): OFCEvent {
     const isRecurring: boolean = event.extendedProps.daysOfWeek !== undefined;
     const startDate = getDate(event.start as Date);
-    const endDate = getDate(event.end as Date);
+    const eventEnd = event.end as Date | null;
+    const endDate = eventEnd
+        ? event.allDay
+            ? getInclusiveAllDayEndDate(eventEnd)
+            : getDate(eventEnd)
+        : startDate;
     return {
         title: event.title,
         ...(event.allDay
